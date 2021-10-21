@@ -223,6 +223,24 @@ namespace SudokuTools
                 // find the index of the worst worker
                 var worstWkrIndex = await Task.FromResult(SudokuTool.GetWorstWorkerIndex(Hive, numWorker));
 
+                if (TheBest.Error < 3)
+                {
+                    Hive.Sort((x, y) => x.Error.CompareTo(y.Error));
+                    for (int i=0; Hive.Count*0.1<i;i+=2)
+                    {
+                        var babyOrga = await Task.FromResult(SudokuTool.MatingResult(Hive[i].Matrix, Hive[i+1].Matrix, 0.50, _rnd));
+                        var babyErra = await Task.FromResult(SudokuTool.Errors(babyOrga));
+                        Hive[Hive.Count - i / 2 - 1] = new Organism(OrganismTypes.Worker, babyOrga, babyErra, 0);
+                        if (babyErra < TheBest.Error)
+                        {
+                            TheBest.Error = babyErra;
+                            TheBest.Matrix = await Task.FromResult(SudokuTool.DuplicateMatrix(babyOrga));
+                            _stats.bestBabies++;
+                            // Splash();
+                        }
+                    }
+                }
+                
 
                 // have a  50/50 chance for each block in 2nd organism will be blended into 1st organism 
                 var babyOrg = await Task.FromResult(SudokuTool.MatingResult(bestWorker.Matrix, bestExplorer.Matrix, 0.50, _rnd));
